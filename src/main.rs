@@ -2,6 +2,9 @@ use axum::{
     extract::Path,
     routing::get,
     Router,
+    Json,
+    http::StatusCode,
+    response::Html,
 };
 
 #[tokio::main]
@@ -35,14 +38,37 @@ async fn main() {
         println!("Requested file: {}", path);
         format!("Requested file: {}", path)
     }
+    async fn plain()-> &'static str{
+        "plain"
+    }
+    async fn htmltype()->Html<&'static str>{
+        Html("<h1>html page</h1>")
+    }
+    async fn no_content()->StatusCode{
+        StatusCode::NO_CONTENT
+    }
+    async fn jsontype()->Json<serde_json::Value>{
+        Json(serde_json::json!({"message":"json type return"}))
+    }
+    async fn mixtuple()->(StatusCode,Json<serde_json::Value>){
+        (StatusCode::OK, Json(serde_json::json!({"message":"multiple tpye return in tuple"})))
+    }
 
+
+    let tyeps_of_return = Router::new()
+        .route("/plain", get(plain))
+        .route("/htmltype", get(htmltype))
+        .route("/status", get(no_content))
+        .route("/jsontype", get(jsontype))
+        .route("/mixtuple", get(mixtuple));
     let basic_routes = Router::new()
         .route("/", get(index))
         .route("/about", get(about))
         .route("/hello", get(hello))
         .route("/user", get(list_user).post(create_user))
         .route("/user/{id}", get(list_single_user))
-        .route("/files/{*path}", get(serve_file));
+        .route("/files/{*path}", get(serve_file))
+        .nest("/type", tyeps_of_return);
 
     let app = Router::new()
         .nest("/v1/api", basic_routes);
