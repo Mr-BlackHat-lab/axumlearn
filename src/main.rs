@@ -1,20 +1,56 @@
-use axum::Router;
-use axum::routing::{get, post};
+use axum::{
+    extract::Path,
+    routing::get,
+    Router,
+};
 
 #[tokio::main]
-async fn main(){
-    async fn index()->&'static str{"home"}
-    async fn about()->&'static str{"about"}
-    async fn hello()->&'static str{"hello world"}
-    async fn create_user()->&'static str{"creating new user"}
-    async fn list_user()->&'static str{"list of user"}
+async fn main() {
+    async fn index() -> &'static str {
+        "home"
+    }
+
+    async fn about() -> &'static str {
+        "about"
+    }
+
+    async fn hello() -> &'static str {
+        "hello world"
+    }
+
+    async fn create_user() -> &'static str {
+        "creating new user"
+    }
+
+    async fn list_user() -> &'static str {
+        "list of user"
+    }
+
+    async fn list_single_user(Path(id): Path<String>) -> String {
+        println!("id: {}", id);
+        format!("single user id {}", id)
+    }
+
+    async fn serve_file(Path(path): Path<String>) -> String {
+        println!("Requested file: {}", path);
+        format!("Requested file: {}", path)
+    }
+
     let app = Router::new()
         .route("/", get(index))
         .route("/about", get(about))
         .route("/hello", get(hello))
-        .route("/user", get(list_user).post(create_user));
+        .route("/user", get(list_user).post(create_user))
+        .route("/user/{id}", get(list_single_user))
+        .route("/files/{*path}", get(serve_file));
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await.unwrap();
-    println!("Listing in http://127.0.0.1:3000");
-    axum::serve(listener, app).await.unwrap();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
+        .await
+        .unwrap();
+
+    println!("Listening on http://127.0.0.1:3000");
+
+    axum::serve(listener, app)
+        .await
+        .unwrap();
 }
