@@ -36,7 +36,7 @@ async fn main() {
         format!("Requested file: {}", path)
     }
 
-    let app = Router::new()
+    let basic_routes = Router::new()
         .route("/", get(index))
         .route("/about", get(about))
         .route("/hello", get(hello))
@@ -44,11 +44,13 @@ async fn main() {
         .route("/user/{id}", get(list_single_user))
         .route("/files/{*path}", get(serve_file));
 
+    let app = Router::new()
+        .nest("/v1/api", basic_routes);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
 
-    println!("Listening on http://127.0.0.1:3000");
+    println!("Listening on http://127.0.0.1:3000/v1/api");
 
     axum::serve(listener, app)
         .await
