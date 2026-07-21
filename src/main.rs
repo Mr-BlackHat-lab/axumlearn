@@ -1,4 +1,5 @@
 use axum::{
+    response::{IntoResponse, Response},
     extract::Path,
     routing::get,
     Router,
@@ -6,7 +7,29 @@ use axum::{
     http::StatusCode,
     response::Html,
 };
+use serde::Serialize;
 
+#[derive(Serialize)]
+struct User{
+    id:u64,
+    name:String
+}
+enum ApiResponse {
+    Ok,
+    Created,
+    JsonData(Vec<User>),
+}
+
+impl IntoResponse for ApiResponse {
+    fn into_response(self) -> Response{
+    match self {
+        Self::Ok => StatusCode::OK.into_response(),
+        Self::Created=> StatusCode::CREATED.into_response(),
+        Self::JsonData(data)=> (StatusCode::OK, Json(data)).into_response(),
+    }
+
+}
+}
 #[tokio::main]
 async fn main() {
     async fn index() -> &'static str {
@@ -25,10 +48,11 @@ async fn main() {
         "creating new user"
     }
 
-    async fn list_user() -> &'static str {
-        "list of user"
+    async  fn list_user() -> ApiResponse{
+        ApiResponse::JsonData(vec![
+            User{id:1,name:"Someone".into()},
+        ])
     }
-
     async fn list_single_user(Path(id): Path<String>) -> String {
         println!("id: {}", id);
         format!("single user id {}", id)
