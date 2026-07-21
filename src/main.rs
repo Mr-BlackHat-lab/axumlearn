@@ -1,14 +1,19 @@
 use axum::{
     response::{IntoResponse, Response},
-    extract::Path,
+    extract::{Path,Query},
     routing::get,
     Router,
     Json,
     http::StatusCode,
     response::Html,
 };
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
+#[derive(Deserialize)]
+struct Pagination{
+    page:Option<u32>,
+    per_page:Option<u32>
+}
 #[derive(Serialize)]
 struct User{
     id:u64,
@@ -44,6 +49,14 @@ async fn main() {
         "hello world"
     }
 
+
+    async fn list_items(Query(pagination): Query<Pagination>)->String{
+        let page = pagination.page.unwrap_or(1);
+        let per_page = pagination.per_page.unwrap_or(20);
+        format!("Page {page}, {per_page} items")
+    }
+
+
     async fn create_user() -> &'static str {
         "creating new user"
     }
@@ -63,10 +76,16 @@ async fn main() {
             User{id,name:username.into()}
         ])
     }
+
+
+
     async fn serve_file(Path(path): Path<String>) -> String {
         println!("Requested file: {}", path);
         format!("Requested file: {}", path)
     }
+
+
+
     async fn plain()-> &'static str{
         "plain"
     }
@@ -90,15 +109,24 @@ async fn main() {
         .route("/status", get(no_content))
         .route("/jsontype", get(jsontype))
         .route("/mixtuple", get(mixtuple));
-    let basic_routes = Router::new()
+    let user = Router::new()
+        .route("/", get(list_user).post(create_user))
+        .route("/{id}", get(list_single_user))
+        .route("/name/{name}/id/{id}", get(list_user_by_name));
+    let base = Router::new()
         .route("/", get(index))
         .route("/about", get(about))
-        .route("/hello", get(hello))
-        .route("/user", get(list_user).post(create_user))
-        .route("/user/{id}", get(list_single_user))
-        .route("/user/name/{name}/id/{id}", get(list_user_by_name))
-        .route("/files/{*path}", get(serve_file))
-        .nest("/type", tyeps_of_return);
+        .route("/hello", get(hello));
+    let files = Router::new()
+        .route("/{*path}", get(serve_file));
+    let item = Router::new()
+        .route("/list_items", get(list_items));
+    let basic_routes = Router::new()
+        .merge(base)
+        .nest("/files", files)
+        .nest("/user", user)
+        .nest("/type", tyeps_of_return)
+        .nest("/items", item);
 
     let app = Router::new()
         .nest("/v1/api", basic_routes);
