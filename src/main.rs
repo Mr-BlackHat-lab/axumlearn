@@ -53,12 +53,12 @@ async fn main() {
             User{id:1,name:"Someone".into()},
         ])
     }
-    async fn list_single_user(Path(id): Path<String>) -> String {
+    async fn list_single_user(Path(id): Path<String>) -> String {//extracting id form http link requset
         println!("id: {}", id);
         format!("single user id {}", id)
     }
 
-    async fn serve_file(Path(path): Path<String>) -> String {
+    async fn serve_file(Path(path): Path<String>) -> String {// extraction path form link
         println!("Requested file: {}", path);
         format!("Requested file: {}", path)
     }
