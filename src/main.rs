@@ -57,8 +57,13 @@ async fn main() {
         println!("id: {}", id);
         format!("single user id {}", id)
     }
-
-    async fn serve_file(Path(path): Path<String>) -> String {// extraction path form link
+    // Multiple path params
+    async fn list_user_by_name(Path((username, id)): Path<(String, u64)>) -> ApiResponse {
+        ApiResponse::JsonData(vec![
+            User{id,name:username.into()}
+        ])
+    }
+    async fn serve_file(Path(path): Path<String>) -> String {
         println!("Requested file: {}", path);
         format!("Requested file: {}", path)
     }
@@ -91,6 +96,7 @@ async fn main() {
         .route("/hello", get(hello))
         .route("/user", get(list_user).post(create_user))
         .route("/user/{id}", get(list_single_user))
+        .route("/user/name/{name}/id/{id}", get(list_user_by_name))
         .route("/files/{*path}", get(serve_file))
         .nest("/type", tyeps_of_return);
 
