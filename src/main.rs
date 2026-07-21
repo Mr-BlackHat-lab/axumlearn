@@ -1,3 +1,4 @@
+use axum::routing::post;
 use axum::{
     response::{IntoResponse, Response},
     extract::{Path,Query},
@@ -14,7 +15,7 @@ struct Pagination{
     page:Option<u32>,
     per_page:Option<u32>
 }
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct User{
     id:u64,
     name:String
@@ -57,8 +58,11 @@ async fn main() {
     }
 
 
-    async fn create_user() -> &'static str {
-        "creating new user"
+    async fn create_user(Json(input): Json<User>)->(StatusCode,String){
+        (
+            StatusCode::CREATED,
+            format!("Created user: {} ,id:({})", input.name, input.id)
+        )
     }
 
     async  fn list_user() -> ApiResponse{
@@ -110,9 +114,10 @@ async fn main() {
         .route("/jsontype", get(jsontype))
         .route("/mixtuple", get(mixtuple));
     let user = Router::new()
-        .route("/", get(list_user).post(create_user))
+        .route("/", get(list_user))
+        .route("/create_user", post(create_user))
         .route("/{id}", get(list_single_user))
-        .route("/name/{name}/id/{id}", get(list_user_by_name));
+        .route("/name/{username}/id/{id}", get(list_user_by_name));
     let base = Router::new()
         .route("/", get(index))
         .route("/about", get(about))
