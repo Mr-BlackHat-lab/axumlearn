@@ -10,6 +10,7 @@ use axum::{
     Form,
 };
 use serde::{Serialize, Deserialize};
+use std::sync::Arc;
 
 #[derive(Deserialize)]
 struct Pagination{
@@ -57,16 +58,16 @@ async fn main() {
     }
 
 
-    async fn login(Form(input): Form<LoginForm>)->String{
-       format!("login attempt: {}", input.username)
-    }
+
     async fn list_items(Query(pagination): Query<Pagination>)->String{
         let page = pagination.page.unwrap_or(1);
         let per_page = pagination.per_page.unwrap_or(20);
         format!("Page {page}, {per_page} items")
     }
 
-
+    async fn login(Form(input): Form<LoginForm>)->String{
+       format!("login attempt: {}", input.username)
+    }
     async fn create_user(Json(input): Json<User>)->(StatusCode,String){
         (
             StatusCode::CREATED,
@@ -115,6 +116,17 @@ async fn main() {
         (StatusCode::OK, Json(serde_json::json!({"message":"multiple tpye return in tuple"})))
     }
 
+    async fn multiinput(
+        Path(id): Path<u64>,                   // from URL
+        Query(params): Query<Pagination>,      // from query string
+        Json(body): Json<User>,          // from body (must be last)
+    ) -> String {
+        let page = params.page.unwrap_or(1);
+        let per_page = params.per_page.unwrap_or(20);
+        let name = body.name;
+        let idd = body.id;
+        format!("id:{id} Page:{page}, {per_page}:items || Body name:{name} id:{idd}")
+    }
 
     let tyeps_of_return = Router::new()
         .route("/plain", get(plain))
@@ -135,7 +147,8 @@ async fn main() {
     let files = Router::new()
         .route("/{*path}", get(serve_file));
     let item = Router::new()
-        .route("/list_items", get(list_items));
+        .route("/list_items", get(list_items))
+        .route("/multinput/{id}", post(multiinput));
     let basic_routes = Router::new()
         .merge(base)
         .nest("/files", files)
