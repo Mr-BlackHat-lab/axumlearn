@@ -7,6 +7,7 @@ use axum::{
     Json,
     http::StatusCode,
     response::Html,
+    Form,
 };
 use serde::{Serialize, Deserialize};
 
@@ -15,10 +16,15 @@ struct Pagination{
     page:Option<u32>,
     per_page:Option<u32>
 }
+#[derive(Deserialize)]
+struct LoginForm{
+    username:String,
+    password:String,
+}
 #[derive(Serialize, Deserialize)]
 struct User{
     id:u64,
-    name:String
+    name:String,
 }
 enum ApiResponse {
     Ok,
@@ -51,6 +57,9 @@ async fn main() {
     }
 
 
+    async fn login(Form(input): Form<LoginForm>)->String{
+       format!("login attempt: {}", input.username)
+    }
     async fn list_items(Query(pagination): Query<Pagination>)->String{
         let page = pagination.page.unwrap_or(1);
         let per_page = pagination.per_page.unwrap_or(20);
@@ -115,6 +124,7 @@ async fn main() {
         .route("/mixtuple", get(mixtuple));
     let user = Router::new()
         .route("/", get(list_user))
+        .route("/login", post(login))
         .route("/create_user", post(create_user))
         .route("/{id}", get(list_single_user))
         .route("/name/{username}/id/{id}", get(list_user_by_name));
